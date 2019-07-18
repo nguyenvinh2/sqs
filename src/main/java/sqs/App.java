@@ -35,7 +35,7 @@ public class App {
 
         message = messageInput(in, options, message);
 
-        if(message.isEmpty()) {
+        if(message.isEmpty() && options.equals("send")) {
             return "Error: No Message.";
         }
 
@@ -50,7 +50,10 @@ public class App {
                 default:
                     break;
             }
-        } catch (Exception e) {}
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         return "All inputs okay.";
     }
 
@@ -67,16 +70,21 @@ public class App {
     }
 
     public static void client(String queue) {
+        List<String> attrList = new ArrayList<>();
+        attrList.add("QueueArn");
         AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
         String queueName = sqs.getQueueUrl(queue).getQueueUrl();
         ReceiveMessageResult results = sqs.receiveMessage(queueName);
         String status = results.getSdkHttpMetadata().getHttpStatusCode()+"";
         List<Message> messages = results.getMessages();
-        List<String> messageBody = new ArrayList<>();
-        messages.forEach(message -> messageBody.add(message.getBody()));
-        System.out.println(Arrays.toString(messageBody.toArray()));
-        for (Message message : messages) {
-            sqs.deleteMessage(queueName, message.getReceiptHandle());
+        while(messages.size() != 0) {
+            List<String> messageBody = new ArrayList<>();
+            messages.forEach(message -> messageBody.add(message.getBody()));
+            System.out.println(messageBody);
+            for (Message message : messages) {
+                sqs.deleteMessage(queueName, message.getReceiptHandle());
+            }
+            messages = sqs.receiveMessage(queueName).getMessages();
         }
         System.out.println(status);
     }
@@ -104,6 +112,8 @@ public class App {
                 System.out.println("What is the message you want to send?");
                 message = in.nextLine();
             }
+        } else {
+            message = "";
         }
         return message;
     }
