@@ -19,7 +19,6 @@ public class App {
     }
 
     public static String runSQS(String options, String queue, String message) {
-        String status = "";
         Scanner in = new Scanner(System.in);
 
         options = optionsInput(in, options);
@@ -36,6 +35,10 @@ public class App {
 
         message = messageInput(in, options, message);
 
+        if(message.isEmpty()) {
+            return "Error: No Message.";
+        }
+
         try {
             switch (options) {
                 case ("send"):
@@ -47,10 +50,8 @@ public class App {
                 default:
                     break;
             }
-        } catch (Exception e) {
-            status = e.getMessage();
-        }
-        return status;
+        } catch (Exception e) {}
+        return "All inputs okay.";
     }
 
 
@@ -102,10 +103,6 @@ public class App {
             if (message == null) {
                 System.out.println("What is the message you want to send?");
                 message = in.nextLine();
-            }
-
-            if(message.isEmpty()) {
-                return "Error: No message entered.";
             }
         }
         return message;
