@@ -7,6 +7,23 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AppTest {
-    @Test public void testAppHasAGreeting() {
+    @Test
+    public void testRunSQSOptions() {
+        assertEquals("Error: Invalid Options.", App.runSQS("lala land","",""));
+    }
+
+    @Test
+    public void testRunSQSQueue() {
+        assertEquals("Error: No Queue Specified.", App.runSQS("send","",""));
+    }
+
+    @Test
+    public void testRunSQSMessage() {
+        assertEquals("Error: No Message.", App.runSQS("receive","k",""));
+    }
+
+    @Test
+    public void testRunSQSValidInputs() {
+        assertEquals("All inputs okay.", App.runSQS("receive","k","dde"));
     }
 }

@@ -36,5 +36,9 @@ compileJava {
     targetCompatibility = 1.8
 }
 
+run{
+    standardInput = System.in
+}
+
 // Define the main class for the application
 mainClassName = 'sqs.App'
