@@ -22,57 +22,41 @@ public class App {
         String status = "";
         Scanner in = new Scanner(System.in);
 
-        if (options == null) {
-            System.out.println("Are you sending or receiving a message? (options = send/receive)");
-            options = in.nextLine().toLowerCase();
-        }
+        options = optionsInput(in, options);
 
         if(!options.equals("send") && !options.equals("receive")) {
             return "Error: Invalid Options.";
         }
 
-        if(queue == null) {
-            System.out.println("Type in the name of the queue you are sending or receiving to:");
-            queue = in.nextLine();
-        }
+        queue = queueInput(in, queue);
 
         if(queue.isEmpty()) {
             return "Error: No Queue Specified.";
         }
 
-        if (options.equals("send")) {
-            if (message == null) {
-                System.out.println("What is the message you want to send?");
-                message = in.nextLine();
-            }
-
-            if(queue.isEmpty()) {
-                return "Error: No message entered.";
-            }
-        }
+        message = messageInput(in, options, message);
 
         try {
-            final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
-            final String queueName = sqs.getQueueUrl(queue).getQueueUrl();
             switch (options) {
                 case ("send"):
-                    sendQueue(sqs, queueName, message);
+                    publisher(queue, message);
                     break;
                 case ("receive"):
-                    receiveQueue(sqs, queueName);
+                    client(queue);
                     break;
                 default:
                     break;
             }
         } catch (Exception e) {
             status = e.getMessage();
-        } finally {
-            return status;
         }
+        return status;
     }
 
 
-    private static void sendQueue(AmazonSQS sqs, String queueName, String message) {
+    public static void publisher(String queue, String message) {
+        AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
+        String queueName = sqs.getQueueUrl(queue).getQueueUrl();
         SendMessageRequest sendMessage = new SendMessageRequest()
                 .withQueueUrl(queueName)
                 .withMessageBody(message)
@@ -81,7 +65,9 @@ public class App {
         System.out.println(statusCode + "");
     }
 
-    private static void receiveQueue(AmazonSQS sqs, String queueName) {
+    public static void client(String queue) {
+        AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
+        String queueName = sqs.getQueueUrl(queue).getQueueUrl();
         ReceiveMessageResult results = sqs.receiveMessage(queueName);
         String status = results.getSdkHttpMetadata().getHttpStatusCode()+"";
         List<Message> messages = results.getMessages();
@@ -92,5 +78,36 @@ public class App {
             sqs.deleteMessage(queueName, message.getReceiptHandle());
         }
         System.out.println(status);
+    }
+
+    private static String optionsInput(Scanner in, String options) {
+        if (options == null) {
+            System.out.println("Are you sending or receiving a message? (options = send/receive)");
+            options = in.nextLine().toLowerCase();
+        }
+
+        return options;
+    }
+
+    private static String queueInput(Scanner in, String queue) {
+        if(queue == null) {
+            System.out.println("Type in the name of the queue you are sending or receiving to:");
+            queue = in.nextLine();
+        }
+        return queue;
+    }
+
+    private static String messageInput(Scanner in, String options, String message) {
+        if (options.equals("send")) {
+            if (message == null) {
+                System.out.println("What is the message you want to send?");
+                message = in.nextLine();
+            }
+
+            if(message.isEmpty()) {
+                return "Error: No message entered.";
+            }
+        }
+        return message;
     }
 }
