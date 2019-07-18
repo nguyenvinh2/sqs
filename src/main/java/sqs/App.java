@@ -10,39 +10,87 @@ import com.amazonaws.services.sqs.model.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class App {
 
-    public static void main(String[] args) {
-        final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
-        final String queueName = sqs.getQueueUrl(args[1]).getQueueUrl();
+    public static void main (String[] args) {
+        System.out.println(runSQS(null, null, null));
+    }
 
-        switch(args[0]) {
-            case("send"):
-                sendQueue(sqs, queueName, args[2]);
-                break;
-            case ("receive"):
-                receiveQueue(sqs, queueName);
+    public static String runSQS(String options, String queue, String message) {
+        String status = "";
+        Scanner in = new Scanner(System.in);
+
+        if (options == null) {
+            System.out.println("Are you sending or receiving a message? (options = send/receive)");
+            options = in.nextLine().toLowerCase();
+        }
+
+        if(!options.equals("send") && !options.equals("receive")) {
+            return "Error: Invalid Options.";
+        }
+
+        if(queue == null) {
+            System.out.println("Type in the name of the queue you are sending or receiving to:");
+            queue = in.nextLine();
+        }
+
+        if(queue.isEmpty()) {
+            return "Error: No Queue Specified.";
+        }
+
+        if (options.equals("send")) {
+            if (message == null) {
+                System.out.println("What is the message you want to send?");
+                message = in.nextLine();
+            }
+
+            if(queue.isEmpty()) {
+                return "Error: No message entered.";
+            }
+        }
+
+        try {
+            final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
+            final String queueName = sqs.getQueueUrl(queue).getQueueUrl();
+            switch (options) {
+                case ("send"):
+                    sendQueue(sqs, queueName, message);
+                    break;
+                case ("receive"):
+                    receiveQueue(sqs, queueName);
+                    break;
+                default:
+                    break;
+            }
+        } catch (Exception e) {
+            status = e.getMessage();
+        } finally {
+            return status;
         }
     }
 
-    private static int sendQueue(AmazonSQS sqs, String queueName, String message) {
+
+    private static void sendQueue(AmazonSQS sqs, String queueName, String message) {
         SendMessageRequest sendMessage = new SendMessageRequest()
                 .withQueueUrl(queueName)
                 .withMessageBody(message)
                 .withDelaySeconds(5);
         int statusCode = sqs.sendMessage(sendMessage).getSdkHttpMetadata().getHttpStatusCode();
-        System.out.println(statusCode);
-        return statusCode;
+        System.out.println(statusCode + "");
     }
 
     private static void receiveQueue(AmazonSQS sqs, String queueName) {
-        List<Message> messages = sqs.receiveMessage(queueName).getMessages();
+        ReceiveMessageResult results = sqs.receiveMessage(queueName);
+        String status = results.getSdkHttpMetadata().getHttpStatusCode()+"";
+        List<Message> messages = results.getMessages();
         List<String> messageBody = new ArrayList<>();
         messages.forEach(message -> messageBody.add(message.getBody()));
         System.out.println(Arrays.toString(messageBody.toArray()));
         for (Message message : messages) {
             sqs.deleteMessage(queueName, message.getReceiptHandle());
         }
+        System.out.println(status);
     }
 }
